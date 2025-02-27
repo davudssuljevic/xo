@@ -26,6 +26,14 @@
             position: relative;
         }
 
+        body.x-turn {
+            background-color: #ff6347; /* Crvena pozadina za X igrača */
+        }
+
+        body.o-turn {
+            background-color: #1e90ff; /* Plava pozadina za O igrača */
+        }
+
         #status {
             font-size: 24px;
             margin-bottom: 20px;
@@ -170,10 +178,35 @@
                 background-color: rgb(255, 0, 255);
             }
         }
+
+        .language-switcher {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .language-switcher img {
+            width: 30px;
+            height: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+
+        .language-switcher img:hover {
+            transform: scale(1.2);
+        }
     </style>
 </head>
-<body>
-    <div id="status">Trenutni igrač: ❌ | ❌ Pobednik: 0 | ⭕ Pobednik: 0</div>
+<body class="x-turn">
+    <div class="language-switcher">
+        <img src="https://flagcdn.com/w40/ba.png" alt="Bosanski" onclick="changeLanguage('bs')">
+        <img src="https://flagcdn.com/w40/gb.png" alt="English" onclick="changeLanguage('en')">
+        <img src="https://flagcdn.com/w40/de.png" alt="Deutsch" onclick="changeLanguage('de')">
+    </div>
+    <div id="status">Trenutni igrač: ❌ | ❌ Broj pobjeda: 0 | ⭕ Broj pobjeda: 0</div>
 
     <button class="start-btn" onclick="startGame()">Start Game</button>
 
@@ -202,9 +235,46 @@
         let xWins = localStorage.getItem('xWins') ? parseInt(localStorage.getItem('xWins')) : 0;
         let oWins = localStorage.getItem('oWins') ? parseInt(localStorage.getItem('oWins')) : 0;
 
+        let language = 'bs';
+        const translations = {
+            bs: {
+                startGame: "Start Igrice",
+                resetGame: "Resetuj igru",
+                resetProgress: "Resetuj Progres",
+                status: (currentPlayer, xWins, oWins) => `Trenutni igrač: ${currentPlayer === 'x' ? '❌' : '⭕'} | ❌ Broj pobjeda: ${xWins} | ⭕ Broj pobjeda: ${oWins}`
+            },
+            en: {
+                startGame: "Start Game",
+                resetGame: "Reset Game",
+                resetProgress: "Reset Progress",
+                status: (currentPlayer, xWins, oWins) => `Current player: ${currentPlayer === 'x' ? '❌' : '⭕'} | ❌ Wins: ${xWins} | ⭕ Wins: ${oWins}`
+            },
+            de: {
+                startGame: "Spiel Starten",
+                resetGame: "Spiel Zurücksetzen",
+                resetProgress: "Fortschritt Zurücksetzen",
+                status: (currentPlayer, xWins, oWins) => `Aktueller Spieler: ${currentPlayer === 'x' ? '❌' : '⭕'} | ❌ Siege: ${xWins} | ⭕ Siege: ${oWins}`
+            }
+        };
+
+        // Ažuriraj status igre
+        function updateStatus() {
+            const statusText = translations[language].status(currentPlayer, xWins, oWins);
+            document.getElementById('status').textContent = statusText;
+        }
+
+        // Promijeni jezik
+        function changeLanguage(lang) {
+            language = lang;
+            document.querySelector('.start-btn').textContent = translations[lang].startGame;
+            document.querySelector('.reset-btn').textContent = translations[lang].resetGame;
+            document.querySelector('.reset-progress-btn').textContent = translations[lang].resetProgress;
+            updateStatus(); // Ažuriraj status nakon promjene jezika
+        }
+
         // Start game
         function startGame() {
-            document.getElementById('status').textContent = 'Trenutni igrač: ❌ | ❌ Pobednik: ' + xWins + ' | ⭕ Pobednik: ' + oWins;
+            updateStatus();
             document.getElementById('board').style.display = 'grid';
             document.querySelector('.start-btn').style.display = 'none';
         }
@@ -218,22 +288,23 @@
                 cell.classList.add('taken', currentPlayer);
 
                 if (checkWin()) {
-                    document.getElementById('status').textContent = currentPlayer === 'x' ? '❌ je pobijedio!' : '⭕ je pobijedio!';
                     if (currentPlayer === 'x') {
                         xWins++;
                     } else {
                         oWins++;
                     }
-                    document.getElementById('status').textContent += ' | ❌ Pobednik: ' + xWins + ' | ⭕ Pobednik: ' + oWins;
                     localStorage.setItem('xWins', xWins);
                     localStorage.setItem('oWins', oWins);
                     gameOver = true;
+                    updateStatus();
                     generateConfetti();
                     return;
                 }
 
                 currentPlayer = currentPlayer === 'x' ? 'o' : 'x';
-                document.getElementById('status').textContent = 'Trenutni igrač: ' + (currentPlayer === 'x' ? '❌' : '⭕') + ' | ❌ Pobednik: ' + xWins + ' | ⭕ Pobednik: ' + oWins;
+                document.body.classList.toggle('x-turn', currentPlayer === 'x');
+                document.body.classList.toggle('o-turn', currentPlayer === 'o');
+                updateStatus();
             }
         }
 
@@ -287,7 +358,9 @@
             board = ['', '', '', '', '', '', '', '', ''];
             gameOver = false;
             currentPlayer = 'x';
-            document.getElementById('status').textContent = 'Trenutni igrač: ❌ | ❌ Pobednik: ' + xWins + ' | ⭕ Pobednik: ' + oWins;
+            document.body.classList.remove('o-turn');
+            document.body.classList.add('x-turn');
+            updateStatus();
 
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
@@ -304,8 +377,11 @@
             oWins = 0;
             localStorage.setItem('xWins', xWins);
             localStorage.setItem('oWins', oWins);
-            document.getElementById('status').textContent = 'Trenutni igrač: ❌ | ❌ Pobednik: 0 | ⭕ Pobednik: 0';
+            updateStatus();
         }
+
+        // Inicijalno postavljanje jezika
+        changeLanguage('bs');
     </script>
 </body>
 </html>
